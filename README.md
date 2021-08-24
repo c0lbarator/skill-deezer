@@ -46,7 +46,6 @@ JarbasAl
 **Entertainment**
 
 ## Tags
-- video
-- youtube
+- OpenVoiceOS
 - common play
 - music
