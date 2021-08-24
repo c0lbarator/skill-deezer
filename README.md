@@ -6,6 +6,17 @@ Deezer skill for OVOS common play
 
 readme coming soon
 
+# Setup
+
+you need to setup Deezer credentials, edit or create `~/.config/deezeridu/deezer.json`
+
+```json
+{
+  "email": "mydeezer@mail.com",
+  "password": "SuperSecret"
+}
+```
+
 # Platform support
 
 - :heavy_check_mark: - tested and confirmed working

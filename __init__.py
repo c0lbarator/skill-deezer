@@ -1,9 +1,10 @@
-from os.path import join, dirname
+from os.path import join, dirname, isfile
 from ovos_workshop.skills.common_play import OVOSCommonPlaybackSkill, common_play_search
 from ovos_workshop.frameworks.playback import CommonPlayMediaType, CommonPlayPlaybackType, \
     CommonPlayMatchConfidence
 from ovos_utils.parse import fuzzy_match, MatchStrategy
 import deezeridu
+from json_database import JsonConfigXDG
 
 
 class DeezerSkill(OVOSCommonPlaybackSkill):
@@ -13,6 +14,10 @@ class DeezerSkill(OVOSCommonPlaybackSkill):
                                 CommonPlayMediaType.MUSIC]
         self.skill_icon = join(dirname(__file__), "ui", "deezer.png")
         self.api = deezeridu.API()
+        self.credentials = JsonConfigXDG("deezer", subfolder="deezeridu")
+
+    def get_intro_message(self):
+        self.speak_dialog("intro")
 
     # common play
     @common_play_search()
@@ -34,6 +39,11 @@ class DeezerSkill(OVOSCommonPlaybackSkill):
                 "bg_image": "http://optional.audioservice.background.jpg"
             }
         """
+        if not isfile(self.credentials.path):
+            LOG.error(f"Deezer credentials are not set! please edit"
+                      f" {self.credentials.path}")
+            return []
+
         # match the request media_type
         base_score = 0
         if media_type == CommonPlayMediaType.MUSIC:
