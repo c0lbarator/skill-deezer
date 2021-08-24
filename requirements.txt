@@ -1,6 +1,4 @@
-youtube-dl
-pafy
+deezeridu>=0.0.1
 ovos_utils>=0.0.12a2
-ovos_workshop>=0.0.4a4
-youtube_searcher>=0.1.6
+ovos_workshop>=0.0.4a9
 rapidfuzz
