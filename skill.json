@@ -1,0 +1,22 @@
+{
+  "name": "Deezer Skill",
+  "skillname": "skill-deezer",
+  "authorname": "JarbasSkills",
+  "foldername": "",
+  "url": "https://github.com/JarbasSkills/skill-deezer",
+  "branch": "v0.1",
+  "desktopFile": false,
+  "warning": "",
+  "systemDeps": false,
+  "platforms": [
+    "arm",
+    "arm64",
+    "i386",
+    "x86_64",
+    "ia64"
+  ],
+  "examples": [
+    "play black metal ist krieg",
+    "play XXX in deezer"
+  ]
+}
