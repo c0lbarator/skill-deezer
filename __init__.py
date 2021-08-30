@@ -79,7 +79,6 @@ class DeezerSkill(OVOSCommonPlaybackSkill):
             #results = [t.track_info for t in self.api.search_track(phrase)]
         except Exception as e:
             self.log.error("Deezer search failed!")
-            self.log.exception(e)
             return []
 
         # score
