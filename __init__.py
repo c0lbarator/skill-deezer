@@ -95,13 +95,15 @@ class DeezerSkill(OVOSCommonPlaybackSkill):
             if media_type == CommonPlayMediaType.GENERIC:
                 score -= 10
 
+            if explicit_request:
+                score += 30
             return min(100, score)
 
         matches = [{
                 "match_confidence": calc_score(r, idx),
                 "media_type": CommonPlayMediaType.MUSIC,
                 "length": r.get("duration"),
-                "uri": r["url"],
+                "uri": "deezer//" + r["url"],
                 "playback": CommonPlayPlaybackType.AUDIO,
                 "image": r.get("image"),
                 "bg_image": r.get("image"),
