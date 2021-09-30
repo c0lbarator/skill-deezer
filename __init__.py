@@ -1,17 +1,19 @@
 from os.path import join, dirname, isfile
-from ovos_workshop.skills.common_play import OVOSCommonPlaybackSkill, common_play_search
-from ovos_workshop.frameworks.playback import CommonPlayMediaType, CommonPlayPlaybackType, \
-    CommonPlayMatchConfidence
-from ovos_utils.parse import fuzzy_match, MatchStrategy
+
 import deezeridu
 from json_database import JsonConfigXDG
+from ovos_utils.log import LOG
+from ovos_utils.parse import fuzzy_match
+from ovos_plugin_common_play.ocp import MediaType, PlaybackType
+from ovos_workshop.skills.common_play import OVOSCommonPlaybackSkill, \
+    common_play_search
 
 
 class DeezerSkill(OVOSCommonPlaybackSkill):
     def __init__(self):
         super(DeezerSkill, self).__init__("Deezer")
-        self.supported_media = [CommonPlayMediaType.GENERIC,
-                                CommonPlayMediaType.MUSIC]
+        self.supported_media = [MediaType.GENERIC,
+                                MediaType.MUSIC]
         self.skill_icon = join(dirname(__file__), "ui", "deezer.png")
         self.api = deezeridu.API()
         self.credentials = JsonConfigXDG("deezer", subfolder="deezeridu")
@@ -21,20 +23,20 @@ class DeezerSkill(OVOSCommonPlaybackSkill):
 
     # common play
     @common_play_search()
-    def search_deezer(self, phrase, media_type=CommonPlayMediaType.GENERIC):
+    def search_deezer(self, phrase, media_type=MediaType.GENERIC):
         """Analyze phrase to see if it is a play-able phrase with this skill.
 
         Arguments:
             phrase (str): User phrase uttered after "Play", e.g. "some music"
-            media_type (CommonPlayMediaType): requested CPSMatchType to search for
+            media_type (MediaType): requested CPSMatchType to media for
 
         Returns:
             search_results (list): list of dictionaries with result entries
             {
-                "match_confidence": CommonPlayMatchConfidence.HIGH,
+                "match_confidence": MatchConfidence.HIGH,
                 "media_type":  CPSMatchType.MUSIC,
                 "uri": "https://audioservice.or.gui.will.play.this",
-                "playback": CommonPlayPlaybackType.VIDEO,
+                "playback": PlaybackType.VIDEO,
                 "image": "http://optional.audioservice.jpg",
                 "bg_image": "http://optional.audioservice.background.jpg"
             }
@@ -46,7 +48,7 @@ class DeezerSkill(OVOSCommonPlaybackSkill):
 
         # match the request media_type
         base_score = 0
-        if media_type == CommonPlayMediaType.MUSIC:
+        if media_type == MediaType.MUSIC:
             base_score += 15
 
         explicit_request = False
@@ -56,12 +58,27 @@ class DeezerSkill(OVOSCommonPlaybackSkill):
             phrase = self.remove_voc(phrase, "deezer")
             explicit_request = True
 
-        results = []
+        # score
+        def calc_score(match, idx=0):
+            # idx represents the order from deezer
+            score = base_score - idx * 5  # - 5% as we go down the results list
+
+            score += 100 * fuzzy_match(phrase.lower(), match["title"].lower())
+
+            # small penalty to not return 100 and allow better disambiguation
+            if media_type == MediaType.GENERIC:
+                score -= 10
+
+            if explicit_request:
+                score += 30
+            return min(100, score)
+
         try:
+            idx = 0
             for t in self.api.search_track(phrase)["data"]:
                 album = t.get("album") or {}
                 pic = album.get('cover_xl') or album.get('cover_big') or \
-                      album.get('cover_medium') or\
+                      album.get('cover_medium') or \
                       album.get('cover_small') or album.get('cover')
                 if not pic:
                     artist = t.get("artist") or {}
@@ -69,51 +86,30 @@ class DeezerSkill(OVOSCommonPlaybackSkill):
                         'picture_big') or \
                           artist.get('picture_medium') or \
                           artist.get('picture_small') or artist.get('picture')
-                results.append({
+                r = {
                     "title": t["title"],
                     "url": t["link"],
                     "image": pic or self.skill_icon,
                     "duration": t["duration"]
-                })
+                }
+                yield {
+                    "match_confidence": calc_score(r, idx),
+                    "media_type": MediaType.MUSIC,
+                    "length": r.get("duration"),
+                    "uri": "deezer//" + r["url"],
+                    "playback": PlaybackType.AUDIO,
+                    "image": r.get("image"),
+                    "bg_image": r.get("image"),
+                    "skill_icon": self.skill_icon,
+                    "skill_logo": self.skill_icon,  # backwards compat
+                    "title": r["title"],
+                    "skill_id": self.skill_id
+                }
+                idx += 1
 
-            #results = [t.track_info for t in self.api.search_track(phrase)]
+            # results = [t.track_info for t in self.api.search_track(phrase)]
         except Exception as e:
             self.log.error("Deezer search failed!")
-            return []
-
-        # score
-        def calc_score(match, idx=0):
-            # idx represents the order from deezer
-            score = base_score - idx * 5 # - 5% as we go down the results list
-
-            # this will give score of 100 if query is included in video title
-            score += 100 * fuzzy_match(
-                phrase.lower(), match["title"].lower(),
-                strategy=MatchStrategy.TOKEN_SET_RATIO)
-
-            # small penalty to not return 100 and allow better disambiguation
-            if media_type == CommonPlayMediaType.GENERIC:
-                score -= 10
-
-            if explicit_request:
-                score += 30
-            return min(100, score)
-
-        matches = [{
-                "match_confidence": calc_score(r, idx),
-                "media_type": CommonPlayMediaType.MUSIC,
-                "length": r.get("duration"),
-                "uri": "deezer//" + r["url"],
-                "playback": CommonPlayPlaybackType.AUDIO,
-                "image": r.get("image"),
-                "bg_image": r.get("image"),
-                "skill_icon": self.skill_icon,
-                "skill_logo": self.skill_icon,  # backwards compat
-                "title": r["title"],
-                "skill_id": self.skill_id
-            } for idx, r in enumerate(results)]
-
-        return matches
 
 
 def create_skill():
