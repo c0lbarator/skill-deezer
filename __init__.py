@@ -2,11 +2,11 @@ from os.path import join, dirname, isfile
 
 import deezeridu
 from json_database import JsonConfigXDG
+from ovos_plugin_common_play.ocp import MediaType, PlaybackType
 from ovos_utils.log import LOG
 from ovos_utils.parse import fuzzy_match
-from ovos_plugin_common_play.ocp import MediaType, PlaybackType
 from ovos_workshop.skills.common_play import OVOSCommonPlaybackSkill, \
-    common_play_search
+    ocp_search
 
 
 class DeezerSkill(OVOSCommonPlaybackSkill):
@@ -22,7 +22,7 @@ class DeezerSkill(OVOSCommonPlaybackSkill):
         self.speak_dialog("intro")
 
     # common play
-    @common_play_search()
+    @ocp_search()
     def search_deezer(self, phrase, media_type=MediaType.GENERIC):
         """Analyze phrase to see if it is a play-able phrase with this skill.
 
@@ -97,6 +97,7 @@ class DeezerSkill(OVOSCommonPlaybackSkill):
                     "media_type": MediaType.MUSIC,
                     "length": r.get("duration"),
                     "uri": "deezer//" + r["url"],
+                    # NOTE: mycroft-gui fails to play deezer, so we need vlc
                     "playback": PlaybackType.AUDIO,
                     "image": r.get("image"),
                     "bg_image": r.get("image"),
