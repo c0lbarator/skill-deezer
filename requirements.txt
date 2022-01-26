@@ -1,3 +1,3 @@
-deezeridu
+git+https://github.com/OpenJarbas/deezeridu.git
 ovos_workshop
 rapidfuzz
